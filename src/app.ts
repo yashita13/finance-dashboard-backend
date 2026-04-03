@@ -3,6 +3,7 @@ import cors from "cors";
 import authRoutes from "./modules/auth/auth.routes";
 import { authenticate, authorize } from "./middlewares/auth.middleware";
 import recordRoutes from "./modules/record/record.routes";
+import summaryRoutes from "./modules/summary/summary.routes";
 
 const app = express();
 
@@ -28,5 +29,7 @@ app.get(
 );
 
 app.use("/api/records", recordRoutes);
+
+app.use("/api/summary", summaryRoutes);
 
 export default app;
