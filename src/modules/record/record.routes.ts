@@ -6,12 +6,30 @@ import {
     remove,
 } from "./record.controller";
 import { authenticate, authorize } from "../../middlewares/auth.middleware";
+import { validate } from "../../middlewares/validate.middleware";
+import {
+    createRecordSchema,
+    updateRecordSchema,
+} from "../../utils/validation/record.validation";
 
 const router = Router();
 
-router.post("/", authenticate, authorize("ADMIN"), create);
+router.post(
+    "/",
+    authenticate,
+    validate(createRecordSchema),
+    create
+);
+
 router.get("/", authenticate, getAll);
-router.put("/:id", authenticate, authorize("ADMIN"), update);
-router.delete("/:id", authenticate, authorize("ADMIN"), remove);
+
+router.put(
+    "/:id",
+    authenticate,
+    validate(updateRecordSchema),
+    update
+);
+
+router.delete("/:id", authenticate, remove);
 
 export default router;
