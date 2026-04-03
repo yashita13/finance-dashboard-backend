@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import authRoutes from "./modules/auth/auth.routes";
 import { authenticate, authorize } from "./middlewares/auth.middleware";
+import recordRoutes from "./modules/record/record.routes";
 
 const app = express();
 
@@ -25,5 +26,7 @@ app.get(
         });
     }
 );
+
+app.use("/api/records", recordRoutes);
 
 export default app;
