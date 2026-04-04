@@ -18,9 +18,27 @@ A backend system for managing financial records with role-based access control a
 
 ## 🏗️ Architecture
 
-Client → Express Routes → Validation Middleware (Zod) → Authentication Middleware (JWT) → Authorization (RBAC) → Controllers → Services → Prisma ORM → PostgreSQL
+```text
+Client
+  ↓
+Routes
+  ↓
+Validation (Zod)
+  ↓
+Authentication (JWT)
+  ↓
+Authorization (RBAC)
+  ↓
+Controllers (Request Handling)
+  ↓
+Services (Business Logic)
+  ↓
+Prisma ORM (Data Access Layer)
+  ↓
+PostgreSQL (Database)
 
-Errors → Global Error Middleware
+Error Handling → Centralized Middleware
+```
 
 
 ## 🔄 Request Flow Example
