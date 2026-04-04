@@ -5,14 +5,16 @@ A backend system for managing financial records with role-based access control a
 ---
 
 ## Key Highlights
-* Built using **modular service-controller** architecture (**scalable**)
-* Built-in analytics engine (**income/expense** calculations, **monthly trends**, **category insights**)
-* Implemented **soft delete** with consistent filtering   
-* Input **validation using Zod** middleware  
-* Role-based access control (**RBAC**) via middleware  
-* Supports **pagination**, **search**, and **multi-filter** queries
-* Pagination **metadata** (total count, total pages)
-* Centralized **error handling** middleware
+* Modular **service-controller architecture**
+* **RBAC with user management** (role updates + activation control)
+* Clear **role assignment flow** (default + admin updates)
+* **Active/inactive user access control** (login + middleware)
+* **Recent activity API** for latest records
+* Built-in analytics (**income/expense, monthly & weekly trends**)
+* Supports **pagination, search, filtering, date-range, and sorting**
+* **Zod validation** and **centralized error handling**
+* **Soft delete** with consistent data filtering
+* Demonstrates **analyst access to analytics endpoints**
 
 ---
 
@@ -55,13 +57,63 @@ Error Handling → Centralized Middleware
 
 ## 🚀 Tech Stack
 
-* **Backend:** Node.js, Express.js
-* **Language:** TypeScript
-* **Database:** PostgreSQL (Neon)
-* **ORM:** Prisma
-* **Authentication:** JWT (JSON Web Token)
-* **Validation:** Zod
-* **API Testing:** Postman
+| Layer          | Technology          |
+| -------------- | ------------------- |
+| Backend        | Node.js, Express.js |
+| Language       | TypeScript          |
+| Database       | PostgreSQL (Neon)   |
+| ORM            | Prisma              |
+| Authentication | JWT                 |
+| Validation     | Zod                 |
+| API Testing    | Postman             |
+
+---
+
+## 🔐 Role-Based Access Control
+
+### Roles & Permissions
+
+| Role       | Permissions                          |
+| ---------- | ------------------------------------ |
+| VIEWER     | View records only                    |
+| ANALYST    | View records + analytics             |
+| ADMIN      | Full access (CRUD + user management) |
+| SUPERADMIN | Full control over all roles          |
+
+---
+
+## 🔄 Role Assignment Flow
+
+* Default role assigned during registration → `VIEWER`
+* Admin can update user roles using API
+* SuperAdmin can override all roles
+
+---
+
+## 👤 User Management
+
+* Admin can view all users
+* Admin can update roles and activation status
+* Supports active/inactive user control
+
+### Example Response
+
+```json
+{
+ "id": "user123",
+ "email": "user@example.com",
+ "role": "ANALYST",
+ "isActive": true
+}
+```
+
+---
+
+## 🚫 User Activation System
+
+* Inactive users cannot login
+* Inactive users cannot access protected APIs
+* Enforced at both login and middleware levels
 
 ---
 
@@ -73,10 +125,11 @@ Error Handling → Centralized Middleware
 * Password hashing using bcrypt
 * JWT-based authentication
 * Role-Based Access Control (RBAC)
-
+  
   * VIEWER → read-only access
   * ANALYST → analytics access
   * ADMIN → full access
+  * SUPER ADMIN → THE BOSS
 
 ---
 
@@ -88,8 +141,10 @@ Error Handling → Centralized Middleware
 
   * by type (INCOME / EXPENSE)
   * by category
+  * by date range
 * Pagination support (`page`, `limit`)
 * Search functionality (case-insensitive)
+* Sorting (amount, date)
 
 ---
 
@@ -99,6 +154,7 @@ Error Handling → Centralized Middleware
 * Net balance calculation
 * Category-wise breakdown (income vs expense)
 * Monthly trends (income vs expense per month)
+* Weekly trends
 * Date range filtering
 
 ---
@@ -106,10 +162,12 @@ Error Handling → Centralized Middleware
 ### 🧩 Advanced Features Implemented
 * Pagination (page & limit)  
 * Case-insensitive search  
-* Multi-field filtering (type, category)  
+* Multi-field filtering (type, category) 
+* Sorting support
+* Date-range filtering
 * Soft delete with consistent exclusion  
 * Aggregation-based analytics  
-* Monthly trend computation  
+* Monthly+ weekly trend computation  
 * Category-wise income vs expense mapping  
 
 ---
@@ -126,164 +184,221 @@ Error Handling → Centralized Middleware
 ---
 
 ## 📡 API Endpoints
-
-### 🔑 Authentication
-
-All protected routes require:
-* Authorization: Bearer <JWT_TOKEN>
-
-### 🔐 Auth
+### Authentication
 
 * `POST /api/auth/register`
-
 * `POST /api/auth/login`
 
 ---
 
-### 📊 Records
+### Users (Admin Only)
 
-* `POST /api/records` → Create record
-* `GET /api/records` → Fetch records
-* `PUT /api/records/:id` → Update record
-* `DELETE /api/records/:id` → Soft delete
-
-#### Query Parameters
-
-* `type=INCOME`
-* `category=Food`
-* `page=1&limit=5`
-* `search=food`
+* `GET /api/users`
+* `PATCH /api/users/:id`
 
 ---
 
-### 📈 Summary
+### Records
+
+* `POST /api/records`
+* `GET /api/records`
+* `GET /api/records/recent`
+* `PUT /api/records/:id`
+* `DELETE /api/records/:id`
+
+---
+
+### Summary
 
 * `GET /api/summary`
 
-#### Query Parameters
+---
 
-* `startDate=YYYY-MM-DD`
-* `endDate=YYYY-MM-DD`
+## 🔍 Query Capabilities
+
+### Filtering
+
+```
+GET /api/records?type=INCOME&category=Food
+```
+
+### Date Filtering
+
+```
+GET /api/records?startDate=2026-04-01&endDate=2026-04-30
+```
+
+### Sorting
+
+```
+GET /api/records?sort=amount&order=desc
+```
+
+---
+
+## 📡 Status Codes
+
+| Code | Meaning               |
+| ---- | --------------------- |
+| 200  | Success               |
+| 201  | Created               |
+| 400  | Bad Request           |
+| 401  | Unauthorized          |
+| 403  | Forbidden             |
+| 404  | Not Found             |
+| 500  | Internal Server Error |
+
+---
+
+## 📊 Analyst Access Example
+
+```
+GET /api/summary
+Authorization: Bearer ANALYST_TOKEN
+```
+
+Response: Allowed
+
+---
+
+## ⚠️ Edge Case Handling
+
+* Prevents cross-user data access
+* Handles inactive users
+* Case-insensitive search
+* Soft delete consistency
+* Input validation for all endpoints
+
+---
+
+## 🔐 Security Considerations
+
+* JWT authentication
+* Password hashing
+* RBAC middleware
+* Input validation (Zod)
+* Protected routes
+
+---
+
+## 🧠 Design Approach
+
+* Layered architecture (Controller → Service → ORM)
+* Prisma for maintainable database interaction
+* PostgreSQL for structured financial data
+* JWT for stateless authentication
+* RBAC for secure role-based access
+* Focus on scalability and clean code
+
+---
+
+## ⚖️ Trade-offs
+
+* Rate limiting not implemented (can be added for production)
+* Unit tests not included due to scope
+* JWT used instead of session-based authentication
+
+---
+
+## 📌 Assumptions
+
+* Users access only their own records
+* Date filtering requires both start and end date
+* Single currency system
+* No third-party integrations
+
+---
+
+## 🔮 Future Improvements
+
+* Rate limiting
+* Swagger API documentation
+* Unit and integration tests
+* Redis caching
+* Refresh tokens
 
 
 ---
 
-## 🔐 Authentication & RBAC Examples
+## 📡 API Examples (Detailed)
 
+---
 
-### 🔑 Login (Generate Token)
+### 🔐 1. Login (Authentication)
 
 #### Request
 
-```bash id="d3k7x1"
+```bash
 POST /api/auth/login
 ```
 
 #### Body
 
-```json id="a8f2pz"
+```json
 {
-  "email": "admin@example.com",
-  "password": "password123"
+  "email": "admin@test.com",
+  "password": "123456"
 }
 ```
 
 #### Response
 
-```json id="m7l2qa"
+```json
 {
   "success": true,
   "data": {
-    "token": "JWT_TOKEN_HERE"
+    "token": "JWT_TOKEN"
   }
 }
 ```
 
 ---
 
-### 🔒 Access Protected Route
+### 👤 2. Get All Users (Admin Only)
 
-#### Request
-
-```bash id="v2k9sd"
-GET /api/records
+```bash
+GET /api/users
+Authorization: Bearer ADMIN_TOKEN
 ```
 
-#### Headers
-
-```text id="k3z8pt"
-Authorization: Bearer JWT_TOKEN_HERE
-```
-
-#### Response
-
-```json id="r4x1bn"
+```json
 {
   "success": true,
-  "data": [...]
+  "data": [
+    {
+      "id": "user123",
+      "email": "user@test.com",
+      "role": "ANALYST",
+      "isActive": true
+    }
+  ]
 }
 ```
 
 ---
 
-### ❌ Unauthorized Access (No Token)
+### 🔄 3. Update User Role / Status
 
-#### Request
-
-```bash id="z7y6dm"
-GET /api/records
+```bash
+PATCH /api/users/:id
+Authorization: Bearer ADMIN_TOKEN
 ```
 
-#### Response
-
-```json id="p5h3lk"
+```json
 {
-  "success": false,
-  "message": "Unauthorized"
+  "role": "ANALYST",
+  "isActive": false
 }
 ```
 
 ---
 
-### ⛔ Forbidden Access (Role-Based)
-
-#### Example: Viewer trying to delete record
-
-#### Request
-
-```bash id="t9w4ju"
-DELETE /api/records/:id
-```
-
-#### Headers
-
-```text id="c2n8yx"
-Authorization: Bearer VIEWER_TOKEN
-```
-
-#### Response
-
-```json id="q6v1em"
-{
-  "success": false,
-  "message": "Forbidden"
-}
-```
-
----
-
-## 📡 API Examples (Detailed)
-
-
-### 📊 1. Summary API (Analytics Engine)
-
-#### Request
+### 📊 4. Summary (Analytics)
 
 ```bash
 GET /api/summary
+Authorization: Bearer ANALYST_TOKEN
 ```
-
-#### Response
 
 ```json
 {
@@ -292,412 +407,169 @@ GET /api/summary
     "totalIncome": 150000,
     "totalExpense": 7000,
     "balance": 143000,
-    "categoryBreakdown": {
-      "Salary": {
-        "income": 100000,
-        "expense": 0
-      },
-      "Food": {
-        "income": 0,
-        "expense": 2000
-      },
-      "Travel": {
-        "income": 0,
-        "expense": 3000
-      },
-      "Freelance": {
-        "income": 50000,
-        "expense": 0
-      },
-      "food": {
-        "income": 0,
-        "expense": 2000
-      }
-    },
-    "monthlyTrends": {
-      "2026-04": {
-        "income": 100000,
-        "expense": 4000
-      },
-      "2026-05": {
-        "income": 50000,
-        "expense": 3000
-      }
-    }
+    "monthlyTrends": {...},
+    "weeklyTrends": {...}
   }
 }
 ```
 
-#### 🔍 Features Demonstrated
+---
 
-* Aggregation logic
-* Category-wise analytics
-* Monthly trend analysis
-* Handles inconsistent category casing (Food vs food)
-* Soft-delete aware calculations
+### 📄 5. Get Records (Pagination + Filters)
+
+```bash
+GET /api/records?type=EXPENSE&search=food&page=1&limit=2
+Authorization: Bearer ANALYST_TOKEN
+```
+
+```json
+{
+  "success": true,
+  "data": [...],
+  "meta": {
+    "total": 10,
+    "page": 1,
+    "limit": 2,
+    "totalPages": 5
+  }
+}
+```
 
 ---
 
-### 📊 2. Get All Records
+### 🔍 6. Advanced Query (Date + Sorting)
 
-#### Request
+```bash
+GET /api/records?startDate=2026-04-01&endDate=2026-04-30&sort=amount&order=desc
+Authorization: Bearer ANALYST_TOKEN
+```
+
+✔ Demonstrates:
+
+* Date filtering
+* Sorting
+* Real-world usage
+
+---
+
+### 🕒 7. Recent Activity
+
+```bash
+GET /api/records/recent?limit=3
+Authorization: Bearer ANALYST_TOKEN
+```
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "amount": 500,
+      "category": "Food",
+      "createdAt": "..."
+    }
+  ]
+}
+```
+
+---
+
+### 🧾 8. Create Record
+
+```bash
+POST /api/records
+Authorization: Bearer ANALYST_TOKEN
+```
+
+```json
+{
+  "amount": 1000,
+  "type": "INCOME",
+  "category": "Salary",
+  "date": "2026-04-04"
+}
+```
+
+---
+
+### ❌ 9. Unauthorized (No Token)
 
 ```bash
 GET /api/records
 ```
 
-#### Response
-
 ```json
 {
-  "success": true,
-  "data": [
-    {
-      "id": "4cd91f4c-ba3b-4666-8b13-569ce6c63e8f",
-      "amount": 50000,
-      "type": "INCOME",
-      "category": "Freelance",
-      "date": "2026-05-10T00:00:00.000Z"
-    },
-    {
-      "id": "2904ab5e-989c-440f-9345-6c7b0d0e1ddb",
-      "amount": 2000,
-      "type": "EXPENSE",
-      "category": "Food",
-      "date": "2026-04-05T00:00:00.000Z"
-    },
-    ...
-
-  ]
-}
-```
-*Note: Response truncated for brevity.*
-
-#### 🔍 Features Demonstrated
-
-* User-specific data isolation
-* Soft delete filtering (`isDeleted: false`)
-* Structured response format
-
----
-
-### 📄 3. Pagination
-
-#### Request
-
-```bash
-GET /api/records?page=2&limit=1
-```
-
-#### Response
-
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "id": "f44e9360-04c2-496f-8447-6e0de4e8138d",
-      "amount": 3000,
-      "type": "EXPENSE",
-      "category": "Travel",
-      "date": "2026-05-02T00:00:00.000Z"
-    }
-  ]
+  "success": false,
+  "message": "Unauthorized"
 }
 ```
 
-#### 🔍 Features Demonstrated
-
-* Server-side pagination
-* Efficient data fetching
-* Scalable API design
-
 ---
 
-### 🔎 4. Search Functionality (Case-Insensitive)
-
-#### Request
-
-```bash
-GET /api/records?search=food
-```
-
-#### Response
-
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "id": "2904ab5e-989c-440f-9345-6c7b0d0e1ddb",
-      "amount": 2000,
-      "type": "EXPENSE",
-      "category": "Food"
-    },
-    {
-      "id": "a5cd373a-d815-4796-bec8-fd6a9176067a",
-      "amount": 2000,
-      "type": "EXPENSE",
-      "category": "food"
-    }
-  ]
-}
-```
-
-#### 🔍 Features Demonstrated
-
-* Case-insensitive search
-* Flexible filtering
-* Handles inconsistent user input
-
----
-
-### 🧾 5. Filter by Type
-
-#### Request
-
-```bash
-GET /api/records?type=INCOME
-```
-
-#### Response
-
-```json
-{
-    "success": true,
-    "data": [
-        {
-            "id": "4cd91f4c-ba3b-4666-8b13-569ce6c63e8f",
-            "amount": 50000,
-            "type": "INCOME",
-            "category": "Freelance",
-            "date": "2026-05-10T00:00:00.000Z",
-            "notes": null,
-            "isDeleted": false,
-            "createdAt": "2026-04-03T16:21:38.121Z",
-            "userId": "b9e3f776-bfe6-45f5-8ab2-61b1bae43524"
-        },
-        {
-            "id": "2a64003a-8be7-49e5-969d-27901bad4695",
-            "amount": 100000,
-            "type": "INCOME",
-            "category": "Salary",
-            "date": "2026-04-03T00:00:00.000Z",
-            "notes": "Monthly salary",
-            "isDeleted": false,
-            "createdAt": "2026-04-03T14:37:43.547Z",
-            "userId": "b9e3f776-bfe6-45f5-8ab2-61b1bae43524"
-        }
-    ]
-}
-```
-
-#### 🔍 Features Demonstrated
-
-* Query-based filtering
-* Dynamic query building
-* Clean API design
-
----
-
-### 🧾 6. Filter by Category
-
-#### Request
-
-```bash
-GET /api/records?category=Food
-```
-
-#### Response
-
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "id": "2904ab5e-989c-440f-9345-6c7b0d0e1ddb",
-      "amount": 2000,
-      "type": "EXPENSE",
-      "category": "Food"
-    }
-  ]
-}
-```
-
-#### 🔍 Features Demonstrated
-
-* Category-level filtering
-* Supports analytics segmentation
-
----
-
-### 🧾 7. Combined Filters
-
-#### Request
-
-```bash
-GET /api/records?type=EXPENSE&search=food&page=1&limit=2
-```
-
-#### Response
-
-```json
-{
-    "success": true,
-    "data": [
-        {
-            "id": "2904ab5e-989c-440f-9345-6c7b0d0e1ddb",
-            "amount": 2000,
-            "type": "EXPENSE",
-            "category": "Food",
-            "date": "2026-04-05T00:00:00.000Z",
-            "notes": null,
-            "isDeleted": false,
-            "createdAt": "2026-04-03T16:20:57.282Z",
-            "userId": "b9e3f776-bfe6-45f5-8ab2-61b1bae43524"
-        },
-        {
-            "id": "a5cd373a-d815-4796-bec8-fd6a9176067a",
-            "amount": 2000,
-            "type": "EXPENSE",
-            "category": "food",
-            "date": "2026-04-05T00:00:00.000Z",
-            "notes": null,
-            "isDeleted": false,
-            "createdAt": "2026-04-03T16:21:11.456Z",
-            "userId": "b9e3f776-bfe6-45f5-8ab2-61b1bae43524"
-        }
-    ]
-}
-```
-
-#### 🔍 Features Demonstrated
-
-* Multi-filter queries
-* Pagination + search + filtering combined
-* Real-world API usage scenario
-
----
-
-### ❌ 8. Soft Delete
-
-#### Request
+### ⛔ 10. Forbidden (RBAC)
 
 ```bash
 DELETE /api/records/:id
+Authorization: Bearer VIEWER_TOKEN
 ```
-
-#### Response
 
 ```json
 {
-  "success": true,
-  "message": "Record deleted"
+  "success": false,
+  "message": "Forbidden"
 }
 ```
 
-#### 🔍 Features Demonstrated
+---
 
-* Soft delete (`isDeleted = true`)
-* Data integrity preservation
-* Automatically excluded from analytics
+### 🚫 11. Inactive User
 
+```bash
+POST /api/auth/login
+```
+
+```json
+{
+  "success": false,
+  "message": "User is inactive"
+}
+```
 
 ---
 
-## ⚠️ Edge Case Handling
+### ❌ 12. Validation Error
 
-* Prevents access to other users’ data using userId filtering  
-* Handles duplicate categories (Food vs food)  
-* Ensures deleted records are excluded from analytics  
-* Validates all inputs before DB operations  
-* Graceful error handling for invalid requests
-
----
-
-## 🔐 Security Considerations
-
-* JWT-based authentication  
-* Role-based access control (RBAC)  
-* Password hashing using bcrypt  
-* Protected routes using middleware  
-* Input validation using Zod
+```json
+{
+  "success": false,
+  "message": "Validation error"
+}
+```
 
 ---
 
 ## ⚙️ Setup Instructions
 
-### 1. Clone repository
-
 ```bash
 git clone <repo-url>
 cd finance-dashboard-backend
-```
-
----
-
-### 2. Install dependencies
-
-```bash
 npm install
 ```
 
----
+### Environment
 
-### 3. Create `.env` file
-
-```env
+```
 DATABASE_URL=your_database_url
 JWT_SECRET=your_secret_key
 ```
 
----
-
-### 4. Run migrations
+### Run
 
 ```bash
 npx prisma migrate dev
-```
-
----
-
-### 5. Start server
-
-```bash
 npm run dev
 ```
-
----
-
-## 🧠 Design Decisions
-
-* PostgreSQL used for structured financial data
-* Prisma for clean database abstraction
-* JWT for stateless authentication
-* Middleware-based RBAC for security
-* Zod for validation and input safety
-* Soft delete to preserve historical data
-* Aggregation handled in service layer
-
----
-
-## 📌 Assumptions
-
-* Users can access only their own records
-* Date filtering requires both startDate and endDate
-* Single currency system
-* No external integrations
-
----
-
-## 🔮 Future Improvements
-
-* Refresh tokens for authentication
-* Rate limiting and security enhancements
-* Redis caching for performance
-* Prisma groupBy for optimized aggregation
-* Swagger API documentation
-* Unit and integration testing
 
 ---
 

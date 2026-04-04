@@ -37,7 +37,9 @@ export const getRecords = async (filters: any, userId: string) => {
         where,
         skip: (page - 1) * limit,
         take: limit,
-        orderBy: { date: "desc" },
+        orderBy:{
+            [filters.sort||"date"]:filters.order||"desc"
+        },
     });
 
     return {
