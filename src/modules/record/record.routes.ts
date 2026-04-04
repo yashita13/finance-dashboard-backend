@@ -11,6 +11,9 @@ import {
     createRecordSchema,
     updateRecordSchema,
 } from "../../utils/validation/record.validation";
+import { asyncHandler } from "../../utils/asyncHandler"
+import { getRecent } from "./record.controller"
+
 
 const router = Router();
 
@@ -22,6 +25,7 @@ router.post(
 );
 
 router.get("/", authenticate, getAll);
+router.get("/recent",authenticate,authorize("ANALYST","ADMIN"),asyncHandler(getRecent))
 
 router.put(
     "/:id",

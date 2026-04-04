@@ -37,6 +37,10 @@ export const getSummary = async (userId: string, query: any) => {
         string,
         { income: number; expense: number }
     > = {};
+    const weeklyTrends:Record<
+        string,
+        { income:number,expense:number}
+    >={};
 
     records.forEach((r) => {
         // totals
@@ -69,6 +73,18 @@ export const getSummary = async (userId: string, query: any) => {
         } else {
             monthlyTrends[month].expense += r.amount;
         }
+
+        //weekly trends
+        const week=new Date(r.date).toISOString().slice(0,10)
+        if(!weeklyTrends[week]){
+            weeklyTrends[week]={income:0,expense:0}
+        }
+
+        if(r.type==="INCOME"){
+            weeklyTrends[week].income+=r.amount
+        }else{
+            weeklyTrends[week].expense+=r.amount
+        }
     });
 
     return {
@@ -77,5 +93,6 @@ export const getSummary = async (userId: string, query: any) => {
         balance: totalIncome - totalExpense,
         categoryBreakdown,
         monthlyTrends,
+        weeklyTrends,
     };
 };

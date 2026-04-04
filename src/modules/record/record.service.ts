@@ -25,6 +25,12 @@ export const getRecords = async (filters: any, userId: string) => {
                 mode: "insensitive",
             },
         }),
+        ...(filters.startDate&&filters.endDate&&{
+            date:{
+                gte:new Date(filters.startDate),
+                lte:new Date(filters.endDate)
+            }
+        }),
     };
     const total = await prisma.record.count({ where });
     const records = await prisma.record.findMany({
@@ -63,3 +69,16 @@ export const deleteRecord = async (id: string, userId: string) => {
         },
     });
 };
+
+export const getRecentRecords=async(userId:string,limit:number=5)=>{
+    return prisma.record.findMany({
+        where:{
+            userId,
+            isDeleted:false
+        },
+        orderBy:{
+            createdAt:"desc"
+        },
+        take:limit
+    })
+}
