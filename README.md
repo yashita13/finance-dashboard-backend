@@ -548,7 +548,7 @@ npm run dev
 
 ## ⚖️ Trade-offs
 
-* Rate limiting not implemented (can be added for production)
+* Rate limiting can be added for production use.
 * Unit tests not included due to scope
 * JWT used instead of session-based authentication
 
