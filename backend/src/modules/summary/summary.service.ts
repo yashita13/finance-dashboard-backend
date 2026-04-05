@@ -1,6 +1,6 @@
 import prisma from "../../config/db";
 
-export const getSummary = async (userId: string, query: any) => {
+export const getSummary = async (userId: string, role: string, query: any) => {
     const { startDate, endDate } = query;
 
     const dateFilter =
@@ -15,7 +15,7 @@ export const getSummary = async (userId: string, query: any) => {
 
     const records = await prisma.record.findMany({
         where: {
-            userId,
+            ...(role === "VIEWER" || role === "ANALYST" || role === "ADMIN" || role === "SUPERADMIN" ? {} : { userId }),
             isDeleted: false,
             ...dateFilter,
         },

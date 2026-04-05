@@ -17,7 +17,7 @@ export const create = async (req: AuthRequest, res: Response) => {
 };
 
 export const getAll = async (req: AuthRequest, res: Response) => {
-    const result = await getRecords(req.query, req.user!.userId);
+    const result = await getRecords(req.query, req.user!.userId, req.user!.role);
 
     res.json({
         success: true,
@@ -53,7 +53,7 @@ export const remove = async (req: AuthRequest, res: Response) => {
 
 export const getRecent=async(req:AuthRequest,res:Response,_next:NextFunction)=>{
     const limit=Number(req.query.limit)||5
-    const data=await getRecentRecords(req.user!.userId,limit)
+    const data=await getRecentRecords(req.user!.userId, req.user!.role, limit)
 
     res.status(200).json({
         success:true,

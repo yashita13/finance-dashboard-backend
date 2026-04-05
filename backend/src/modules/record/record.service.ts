@@ -10,12 +10,12 @@ export const createRecord = async (data: any, userId: string) => {
     });
 };
 
-export const getRecords = async (filters: any, userId: string) => {
+export const getRecords = async (filters: any, userId: string, role: string) => {
     //adding pagination too
     const page = Number(filters.page) || 1;
     const limit = Number(filters.limit) || 5;
     const where = {
-        userId,
+        ...(role === "VIEWER" || role === "ANALYST" || role === "ADMIN" || role === "SUPERADMIN" ? {} : { userId }),
         isDeleted: false,
         ...(filters.type && { type: filters.type }),
         ...(filters.category && { category: filters.category }),
@@ -72,10 +72,10 @@ export const deleteRecord = async (id: string, userId: string) => {
     });
 };
 
-export const getRecentRecords=async(userId:string,limit:number=5)=>{
+export const getRecentRecords=async(userId:string, role:string, limit:number=5)=>{
     return prisma.record.findMany({
         where:{
-            userId,
+            ...(role === "VIEWER" || role === "ANALYST" || role === "ADMIN" || role === "SUPERADMIN" ? {} : { userId }),
             isDeleted:false
         },
         orderBy:{
