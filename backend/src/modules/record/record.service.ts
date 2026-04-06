@@ -50,22 +50,36 @@ export const getRecords = async (filters: any, userId: string, role: string) => 
     };
 };
 
-export const updateRecord = async (id: string, data: any, userId: string) => {
+export const updateRecord = async (id: string, data: any, userId: string, role: string) => {
+    const whereClause: any = { id };
+    if (role === "ANALYST") {
+        whereClause.userId = userId;
+    }
+    
+    const existing = await prisma.record.findFirst({ where: whereClause });
+    if (!existing) {
+        throw new Error("Record not found or unauthorized");
+    }
+
     return prisma.record.update({
-        where: {
-            id,
-            userId,
-        },
+        where: { id },
         data,
     });
 };
 
-export const deleteRecord = async (id: string, userId: string) => {
+export const deleteRecord = async (id: string, userId: string, role: string) => {
+    const whereClause: any = { id };
+    if (role === "ANALYST") {
+        whereClause.userId = userId;
+    }
+
+    const existing = await prisma.record.findFirst({ where: whereClause });
+    if (!existing) {
+        throw new Error("Record not found or unauthorized");
+    }
+
     return prisma.record.update({
-        where: {
-            id,
-            userId,
-        },
+        where: { id },
         data: {
             isDeleted: true,
         },

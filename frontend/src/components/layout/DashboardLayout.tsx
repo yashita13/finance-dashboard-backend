@@ -9,25 +9,28 @@ import { motion, AnimatePresence } from "framer-motion";
 import { LayoutDashboard } from "lucide-react";
 
 export const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated } = useAuthStore();
+  const token = useAuthStore(state => state.token);
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    if (!isAuthenticated()) {
-      router.push("/login");
+    if (!token) {
+      router.replace("/login");
     }
-  }, [isAuthenticated, router]);
+  }, [token, router]);
 
-  if (!mounted || !isAuthenticated()) {
+  if (!mounted || !token) {
     // Initial loading state or unauthenticated waiting redirect
     return (
-      <div className="min-h-screen bg-[var(--color-background)] flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--color-background)] flex flex-col items-center justify-center gap-4">
         <motion.div animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 1.5 }}>
            <LayoutDashboard className="w-12 h-12 text-[var(--color-primary-start)]" />
         </motion.div>
+        {!token && mounted && (
+          <p className="text-white/50 text-sm font-medium animate-pulse">Redirecting... Please refresh if stuck.</p>
+        )}
       </div>
     );
   }

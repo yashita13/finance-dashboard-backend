@@ -6,6 +6,7 @@ import { LayoutDashboard, ReceiptText, Users, LogOut, Server, X } from "lucide-r
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
+import { RequestAccessButton } from "@/features/access-request/RequestAccessButton";
 
 export const Sidebar = ({ onClose }: { onClose?: () => void }) => {
   const { user } = useAuthStore();
@@ -15,6 +16,7 @@ export const Sidebar = ({ onClose }: { onClose?: () => void }) => {
     { name: "Overview", href: "/dashboard", icon: LayoutDashboard, roles: ["SUPERADMIN", "ADMIN", "ANALYST", "VIEWER"] },
     { name: "Transactions", href: "/transactions", icon: ReceiptText, roles: ["SUPERADMIN", "ADMIN", "ANALYST"] },
     { name: "Users", href: "/users", icon: Users, roles: ["SUPERADMIN", "ADMIN"] },
+    { name: "Access Requests", href: "/access-requests", icon: Server, roles: ["SUPERADMIN", "ADMIN"] },
     { name: "System Config", href: "/system", icon: Server, roles: ["SUPERADMIN"] },
   ];
 
@@ -35,6 +37,12 @@ export const Sidebar = ({ onClose }: { onClose?: () => void }) => {
           </button>
         )}
       </div>
+
+      {user?.role === "VIEWER" && (
+        <div className="mb-6 px-2">
+          <RequestAccessButton />
+        </div>
+      )}
 
       <nav className="flex-1 space-y-2">
         {filteredLinks.map((link) => {

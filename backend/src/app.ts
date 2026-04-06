@@ -5,7 +5,8 @@ import { authenticate, authorize } from "./middlewares/auth.middleware";
 import recordRoutes from "./modules/record/record.routes";
 import summaryRoutes from "./modules/summary/summary.routes";
 import { Request, Response, NextFunction } from "express";
-import userRoutes from "./modules/user/user.routes"
+import userRoutes from "./modules/user/user.routes";
+import accessRequestRoutes from "./modules/access-request/access-request.routes";
 
 export const errorHandler = (
     err: any,
@@ -51,5 +52,6 @@ app.use("/api/summary", summaryRoutes);
 app.use(errorHandler);
 
 app.use("/api/users", userRoutes);
+app.use("/api/access-requests", accessRequestRoutes);
 
 export default app;

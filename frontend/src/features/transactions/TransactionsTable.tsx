@@ -18,6 +18,7 @@ interface RecordItem {
   category: string;
   date: string;
   createdAt: string;
+  userId: string;
 }
 
 export const TransactionsTable = () => {
@@ -75,7 +76,7 @@ export const TransactionsTable = () => {
     return () => clearTimeout(timer);
   }, [page, limit, search, typeFilter, startDate, endDate, sort, order]);
 
-  const canManage = user?.role === "SUPERADMIN" || user?.role === "ADMIN";
+  const canManage = user?.role === "SUPERADMIN" || user?.role === "ADMIN" || user?.role === "ANALYST";
 
   // Smart Categorization Logic
   useEffect(() => {
@@ -258,13 +259,26 @@ export const TransactionsTable = () => {
                         {r.type === 'EXPENSE' ? '-' : '+'}${r.amount.toLocaleString()}
                       </td>
                       {canManage && (
-                        <td className="py-3 px-6 text-right whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button onClick={() => openForm(r)} className="p-2 text-white/50 hover:text-white transition-colors">
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => handleDelete(r.id)} className="p-2 text-[var(--color-danger)]/70 hover:text-[var(--color-danger)] transition-colors ml-2">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                        <td className="py-3 px-6 text-right whitespace-nowrap">
+                          {(user?.role === 'SUPERADMIN' || user?.role === 'ADMIN' || (user?.role === 'ANALYST' && r.userId === user?.id)) ? (
+                            <>
+                              <button onClick={() => openForm(r)} className="p-2 text-white/50 hover:text-white transition-colors">
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button onClick={() => handleDelete(r.id)} className="p-2 text-[var(--color-danger)]/70 hover:text-[var(--color-danger)] transition-colors ml-2">
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button disabled title="Editing other users' records is an Admin-only privilege." className="p-2 text-white/20 cursor-not-allowed transition-colors">
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button disabled title="Deleting other users' records is an Admin-only privilege." className="p-2 text-[var(--color-danger)]/20 cursor-not-allowed transition-colors ml-2">
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
                         </td>
                       )}
                     </motion.tr>

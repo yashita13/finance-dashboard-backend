@@ -20,6 +20,7 @@ const router = Router();
 router.post(
     "/",
     authenticate,
+    authorize("ANALYST", "ADMIN", "SUPERADMIN"),
     validate(createRecordSchema),
     create
 );
@@ -30,10 +31,11 @@ router.get("/recent",authenticate,authorize("ANALYST","ADMIN"),asyncHandler(getR
 router.put(
     "/:id",
     authenticate,
+    authorize("ANALYST", "ADMIN", "SUPERADMIN"),
     validate(updateRecordSchema),
     update
 );
 
-router.delete("/:id", authenticate, remove);
+router.delete("/:id", authenticate, authorize("ANALYST", "ADMIN", "SUPERADMIN"), remove);
 
 export default router;

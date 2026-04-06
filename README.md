@@ -78,14 +78,29 @@ Error Handling → Centralized Middleware
 
 ## 🔐 Role-Based Access Control
 
+### Role Hierarchy
+**SUPER_ADMIN > ADMIN > ANALYST > VIEWER**
+
 ### Roles & Permissions
 
-| Role       | Permissions                          |
-| ---------- | ------------------------------------ |
-| VIEWER     | View records only                    |
-| ANALYST    | View records + analytics             |
-| ADMIN      | Full access (CRUD + user management) |
-| SUPERADMIN | Full control over all roles          |
+| Role | Permissions |
+| --- | --- |
+| **VIEWER** | Read-only access <br/> Can request upgrade to ANALYST |
+| **ANALYST** | Can CREATE (POST) records <br/> Can view analytics <br/> ❌ Cannot EDIT or DELETE any records |
+| **ADMIN** | Full CRUD access on all records <br/> Can manage users <br/> Can approve/reject access requests |
+| **SUPER_ADMIN** | Full system control <br/> Can override all permissions |
+
+### Explicit RBAC Enforcement Rules
+
+| Action | Allowed Roles |
+| --- | --- |
+| **CREATE_RECORD** | ANALYST, ADMIN, SUPER_ADMIN |
+| **UPDATE_RECORD** | ADMIN, SUPER_ADMIN |
+| **DELETE_RECORD** | ADMIN, SUPER_ADMIN |
+| **REQUEST_ACCESS** | VIEWER |
+| **APPROVE_REQUEST** | ADMIN, SUPER_ADMIN |
+| **MANAGE_USERS** | ADMIN, SUPER_ADMIN |
+| **FULL_ACCESS** | SUPER_ADMIN |
 
 ---
 
@@ -93,24 +108,38 @@ Error Handling → Centralized Middleware
 
 * Default role assigned during registration → `VIEWER`
 * Admin can update user roles using API
-* SuperAdmin can override all roles
+* SUPER_ADMIN can override all roles
 
 ---
 
-## 👤 User Management
+## 👤 User Management & Access Requests
 
-* Admin can view all users
-* Admin can update roles and activation status
-* Supports active/inactive user control
+* Admin can view all users, update roles, and modify activation status.
+* Supports active/inactive user control.
 
-### Example Response
+### Automated Access Request System
 
-```json
-{
- "id": "user123",
- "email": "user@example.com",
- "role": "ANALYST",
- "isActive": true
+**Flow:** Viewer → Request → Admin/SuperAdmin → Approve → Becomes Analyst
+
+* **Duplicate request prevention:** The system strictly blocks users from submitting multiple pending requests.
+* **Status states:** Requests exist globally either as `PENDING`, `APPROVED`, or `REJECTED`.
+* `VIEWER` users can submit requests directly from the UI to elevate their rank to Analyst.
+* `ADMIN` and `SUPER_ADMIN` have a dedicated dashboard to approve or reject these requests seamlessly.
+
+---
+
+## 🗄️ Prisma Model
+
+### AccessRequest Schema
+```prisma
+model AccessRequest {
+  id            String   @id @default(uuid())
+  userId        String
+  requestedRole String
+  status        String
+  createdAt     DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
 }
 ```
 
@@ -126,17 +155,23 @@ Error Handling → Centralized Middleware
 
 ## 🔐 Features
 
+### 🎨 Frontend UI / Neo-Glassmorphism Dashboard
+* **Dynamic Analytics**: Visualizes data natively through interactive charts (income vs expense) and trend graphs (monthly/weekly).
+* **Premium Aesthetics**: Features a modern "neo-glassmorphism" design with deep purples, glowing shadows, frosted glass panels, and blurred backdrops.
+* **Role-Based UI Rendering**:
+  * **Analyst** → sees "Add Record" button only.
+  * **Viewer** → sees "Request Access" button.
+  * **Admin / SUPER_ADMIN** → see the approval dashboard and complete management access.
+* **Smart Contextual Layouts**: Implements strict conditional rendering based on exact permissions—disabling unauthorized row-level actions visually across tables to protect data boundaries.
+
+---
+
 ### Authentication & Authorization
 
 * User registration and login
 * Password hashing using bcrypt
 * JWT-based authentication
 * Role-Based Access Control (RBAC)
-  
-  * VIEWER → read-only access
-  * ANALYST → analytics access
-  * ADMIN → full access
-  * SUPER ADMIN → THE BOSS
 
 ---
 
@@ -145,7 +180,6 @@ Error Handling → Centralized Middleware
 * Create, update, delete records
 * Soft delete (isDeleted flag)
 * Filter records:
-
   * by type (INCOME / EXPENSE)
   * by category
   * by date range
@@ -182,31 +216,30 @@ Error Handling → Centralized Middleware
 ### ✅ Validation (Zod)
 
 * Input validation using Zod schemas
-* Validates:
-
-  * request body (records, auth)
-  * query parameters (summary)
+* Validates request body and query parameters
 * Prevents invalid or malformed API requests
 
 ---
 
 ## 📡 API Endpoints
-### Authentication
 
+### Authentication
 * `POST /api/auth/register`
 * `POST /api/auth/login`
 
 ---
 
-### Users (Admin Only)
-
+### Users & Access Requests (Admin Only)
 * `GET /api/users`
 * `PATCH /api/users/:id`
+* `POST /api/access-requests` (VIEWER only)
+* `GET /api/access-requests`
+* `PATCH /api/access-requests/:id/approve`
+* `PATCH /api/access-requests/:id/reject`
 
 ---
 
 ### Records
-
 * `POST /api/records`
 * `GET /api/records`
 * `GET /api/records/recent`
@@ -216,7 +249,6 @@ Error Handling → Centralized Middleware
 ---
 
 ### Summary
-
 * `GET /api/summary`
 
 ---
@@ -224,19 +256,16 @@ Error Handling → Centralized Middleware
 ## 🔍 Query Capabilities
 
 ### Filtering
-
 ```
 GET /api/records?type=INCOME&category=Food
 ```
 
 ### Date Filtering
-
 ```
 GET /api/records?startDate=2026-04-01&endDate=2026-04-30
 ```
 
 ### Sorting
-
 ```
 GET /api/records?sort=amount&order=desc
 ```
@@ -268,7 +297,6 @@ Response: Allowed
 
 ---
 
-
 ## 📡 API Examples (Detailed)
 
 ---
@@ -276,13 +304,11 @@ Response: Allowed
 ### 🔐 1. Login (Authentication)
 
 #### Request
-
 ```bash
 POST /api/auth/login
 ```
 
 #### Body
-
 ```json
 {
   "email": "admin@test.com",
@@ -291,7 +317,6 @@ POST /api/auth/login
 ```
 
 #### Response
-
 ```json
 {
   "success": true,
@@ -342,7 +367,35 @@ Authorization: Bearer ADMIN_TOKEN
 
 ---
 
-### 📊 4. Summary (Analytics)
+### 🛡️ 4. Access Requests System
+
+#### Create Request (Viewer)
+```bash
+POST /api/access-requests
+Authorization: Bearer VIEWER_TOKEN
+```
+```json
+{
+  "success": true,
+  "data": { "id": "req_123", "status": "PENDING" }
+}
+```
+
+#### Approve Request (Admin)
+```bash
+PATCH /api/access-requests/req_123/approve
+Authorization: Bearer ADMIN_TOKEN
+```
+```json
+{
+  "success": true,
+  "data": { "id": "req_123", "status": "APPROVED", "requestedRole": "ANALYST" }
+}
+```
+
+---
+
+### 📊 5. Summary (Analytics)
 
 ```bash
 GET /api/summary
@@ -356,15 +409,15 @@ Authorization: Bearer ANALYST_TOKEN
     "totalIncome": 150000,
     "totalExpense": 7000,
     "balance": 143000,
-    "monthlyTrends": {...},
-    "weeklyTrends": {...}
+    "monthlyTrends": {},
+    "weeklyTrends": {}
   }
 }
 ```
 
 ---
 
-### 📄 5. Get Records (Pagination + Filters)
+### 📄 6. Get Records (Pagination + Filters)
 
 ```bash
 GET /api/records?type=EXPENSE&search=food&page=1&limit=2
@@ -374,7 +427,7 @@ Authorization: Bearer ANALYST_TOKEN
 ```json
 {
   "success": true,
-  "data": [...],
+  "data": [],
   "meta": {
     "total": 10,
     "page": 1,
@@ -386,7 +439,7 @@ Authorization: Bearer ANALYST_TOKEN
 
 ---
 
-### 🔍 6. Advanced Query (Date + Sorting)
+### 🔍 7. Advanced Query (Date + Sorting)
 
 ```bash
 GET /api/records?startDate=2026-04-01&endDate=2026-04-30&sort=amount&order=desc
@@ -394,14 +447,13 @@ Authorization: Bearer ANALYST_TOKEN
 ```
 
 ✔ Demonstrates:
-
 * Date filtering
 * Sorting
 * Real-world usage
 
 ---
 
-### 🕒 7. Recent Activity
+### 🕒 8. Recent Activity
 
 ```bash
 GET /api/records/recent?limit=3
@@ -414,8 +466,7 @@ Authorization: Bearer ANALYST_TOKEN
   "data": [
     {
       "amount": 500,
-      "category": "Food",
-      "createdAt": "..."
+      "category": "Food"
     }
   ]
 }
@@ -423,7 +474,7 @@ Authorization: Bearer ANALYST_TOKEN
 
 ---
 
-### 🧾 8. Create Record
+### 🧾 9. Create Record
 
 ```bash
 POST /api/records
@@ -441,7 +492,7 @@ Authorization: Bearer ANALYST_TOKEN
 
 ---
 
-### ❌ 9. Unauthorized (No Token)
+### ❌ 10. Unauthorized (No Token)
 
 ```bash
 GET /api/records
@@ -456,7 +507,7 @@ GET /api/records
 
 ---
 
-### ⛔ 10. Forbidden (RBAC)
+### ⛔ 11. Forbidden (RBAC)
 
 ```bash
 DELETE /api/records/:id
@@ -472,7 +523,7 @@ Authorization: Bearer VIEWER_TOKEN
 
 ---
 
-### 🚫 11. Inactive User
+### 🚫 12. Inactive User
 
 ```bash
 POST /api/auth/login
@@ -487,7 +538,7 @@ POST /api/auth/login
 
 ---
 
-### ❌ 12. Validation Error
+### ❌ 13. Validation Error
 
 ```json
 {
@@ -535,9 +586,11 @@ npm run dev
 
 ## 🔐 Security Considerations
 
+* Strict RBAC enforcement at backend
+* Prevents unauthorized record creation
+* Ensures VIEWER cannot access protected mutation routes
 * JWT authentication
 * Password hashing
-* RBAC middleware
 * Input validation (Zod)
 * Protected routes
 
@@ -564,7 +617,7 @@ npm run dev
 
 ## 📌 Assumptions
 
-* Users access only their own records
+* Users operate strictly within their RBAC permission bounds
 * Date filtering requires both start and end date
 * Single currency system
 * No third-party integrations
@@ -579,9 +632,8 @@ npm run dev
 * Redis caching
 * Refresh tokens
 
-
 ---
 
 ## 🎯 Conclusion
 
-This project demonstrates backend engineering concepts such as secure API design, authentication, authorization, validation, data modeling, and analytical processing aligned with real-world fintech applications.
+This project demonstrates backend engineering concepts such as secure API design, authentication, authorization, validation, data modeling, and analytical processing aligned with real-world fintech applications. The framework bridges complete backend solidity with hierarchical RBAC, controlled privilege escalation, and secure role-based workflows driven securely by strict access management similar to enterprise real-world SaaS systems.

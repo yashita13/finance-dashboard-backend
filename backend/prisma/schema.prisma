@@ -18,6 +18,7 @@ model User {
   updatedAt DateTime @default(now()) @updatedAt
 
   records   Record[]
+  accessRequests AccessRequest[]
 }
 
 model Record {
@@ -46,4 +47,14 @@ enum Role {
 enum RecordType {
   INCOME
   EXPENSE
+}
+
+model AccessRequest {
+  id            String   @id @default(uuid())
+  userId        String
+  requestedRole String   // "ANALYST"
+  status        String   // "PENDING" | "APPROVED" | "REJECTED"
+  createdAt     DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
 }

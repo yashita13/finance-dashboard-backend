@@ -8,6 +8,11 @@ import { usePathname } from "next/navigation";
 export const Topbar = ({ onOpenSidebar }: { onOpenSidebar?: () => void }) => {
   const logout = useAuthStore(state => state.logout);
   const pathname = usePathname();
+
+  const handleLogout = () => {
+    logout();
+    window.location.href = "/";
+  };
   
   const titleMap: Record<string, string> = {
     "/": "Overview",
@@ -33,7 +38,7 @@ export const Topbar = ({ onOpenSidebar }: { onOpenSidebar?: () => void }) => {
           <Bell className="w-5 h-5 text-white/70" />
           <span className="absolute top-2 right-2 w-2 h-2 bg-[var(--color-primary-start)] rounded-full shadow-[0_0_8px_var(--color-primary-start)]" />
         </button>
-        <Button variant="ghost" className="px-4 py-2 text-white/70 hover:text-[#ff4d4d]" onClick={logout}>
+        <Button variant="ghost" className="px-4 py-2 text-white/70 hover:text-[#ff4d4d]" onClick={handleLogout}>
           <LogOut className="w-4 h-4" />
         </Button>
       </div>

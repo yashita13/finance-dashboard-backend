@@ -33,7 +33,7 @@ export const getAll = async (req: AuthRequest, res: Response) => {
 
 export const update = async (req: AuthRequest, res: Response) => {
     const id = req.params.id as string;
-    await updateRecord(id, req.body, req.user!.userId);
+    await updateRecord(id, req.body, req.user!.userId, req.user!.role);
 
     res.json({
         success: true,
@@ -43,7 +43,7 @@ export const update = async (req: AuthRequest, res: Response) => {
 
 export const remove = async (req: AuthRequest, res: Response) => {
     const id = req.params.id as string;
-    await deleteRecord(id, req.user!.userId);
+    await deleteRecord(id, req.user!.userId, req.user!.role);
 
     res.json({
         success: true,
